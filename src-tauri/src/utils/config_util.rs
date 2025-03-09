@@ -1,8 +1,9 @@
+use crate::app::constants::messages;
 use serde::ser::Error;
 use serde::Deserialize;
-use serde_json::{Result, Value, json};
+use serde_json::{json, Result, Value};
+use tracing::debug;
 use std::fs;
-use crate::app::constants::messages;
 
 pub struct ConfigUtil {
     json: Value,
@@ -50,6 +51,28 @@ impl ConfigUtil {
         Ok(entity)
     }
 
+    pub fn set_property(&mut self, target_keys: &[&str], new_value: Value) -> Result<()> {
+        let mut current_value = &mut self.json;
+
+        for (i, key) in target_keys.iter().enumerate() {
+            if i == target_keys.len() - 1 {
+                current_value[key] = new_value;
+                return Ok(());
+            }
+            if !current_value.is_object() {
+                return Err(serde_json::Error::custom(format!(
+                    "Cannot set property '{}' because the path is not an object.",
+                    key
+                )));
+            }
+            current_value = current_value.as_object_mut()
+                .unwrap()
+                .entry(*key)
+                .or_insert(json!({}));
+        }
+        Ok(())
+    }
+
     /// 修改指定属性为新的值
     pub fn modify_property(&mut self, target_keys: &[&str], new_value: Value) {
         let mut current_value = &mut self.json;
@@ -91,6 +114,7 @@ impl ConfigUtil {
     /// 将修改后的 JSON 写回到文件
     pub fn save(&self) -> Result<()> {
         let updated_data = serde_json::to_string_pretty(&self.json)?;
+        debug!("修改后的配置文件: {}", updated_data);
         fs::write(&self.file_path, updated_data).map_err(|e| {
             serde_json::Error::custom(format!("{}: {}", messages::ERR_WRITE_FILE_FAILED, e))
         })?;

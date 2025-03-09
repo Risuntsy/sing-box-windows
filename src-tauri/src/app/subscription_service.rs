@@ -83,7 +83,7 @@ fn modify_default_mode(config_path: &Path, mode: String) -> Result<(), Box<dyn E
     
     // 我们不使用get_value方法，因为它不存在
     // 而是直接创建新的配置并修改
-    let target_keys = vec!["experimental"];
+    let target_keys = ["experimental"];
     
     // 创建新的配置，设置mode
     let config = Config {
@@ -98,7 +98,7 @@ fn modify_default_mode(config_path: &Path, mode: String) -> Result<(), Box<dyn E
     };
     
     // 更新配置
-    json_util.modify_property(&target_keys, serde_json::to_value(config)?);
+    json_util.set_property(&target_keys, serde_json::to_value(config).unwrap())?;
     json_util.save()?;
     
     Ok(())
@@ -153,7 +153,7 @@ async fn download_and_process_subscription(url: String) -> Result<(), Box<dyn Er
     file.write_all(text.as_bytes())?;
 
     let mut json_util = ConfigUtil::new(path.to_str().unwrap())?;
-    let target_keys = vec!["experimental"];
+    let target_keys = ["experimental"];
     let config = Config {
         clash_api: ClashApiConfig {
             external_controller: "127.0.0.1:12081".to_string(),
@@ -164,7 +164,7 @@ async fn download_and_process_subscription(url: String) -> Result<(), Box<dyn Er
         },
         cache_file: CacheFileConfig { enabled: true },
     };
-    json_util.modify_property(&target_keys, serde_json::to_value(config)?);
+    json_util.set_property(&target_keys, serde_json::to_value(config).unwrap())?;
     json_util.save()?;
 
     info!("订阅已更新");
@@ -190,7 +190,7 @@ fn process_subscription_content(content: String) -> Result<(), Box<dyn Error>> {
         },
         cache_file: CacheFileConfig { enabled: true },
     };
-    json_util.modify_property(&target_keys, serde_json::to_value(config)?);
+    json_util.set_property(&target_keys, serde_json::to_value(config).unwrap())?;
     json_util.save()?;
 
     info!("订阅已更新");

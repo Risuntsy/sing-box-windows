@@ -14,7 +14,7 @@ pub fn set_system_proxy() -> Result<(), String> {
         ConfigUtil::new(config_path.to_str().unwrap()).map_err(|e| format!("{}: {}", messages::ERR_CONFIG_READ_FAILED, e))?;
 
     let mut json_util = json_util;
-    let target_keys = vec!["inbounds"];
+    let target_keys = ["inbounds"];
     let new_structs = vec![config_model::Inbound {
         r#type: config_constants::DEFAULT_INBOUND_TYPE.to_string(),
         tag: config_constants::DEFAULT_INBOUND_TAG.to_string(),
@@ -28,8 +28,14 @@ pub fn set_system_proxy() -> Result<(), String> {
         set_system_proxy: Some(true),
     }];
 
-    json_util.update_key(target_keys.clone(), serde_json::to_value(new_structs).unwrap());
-    match json_util.save_to_file() {
+    // json_util.update_key(target_keys.clone(), serde_json::to_value(new_structs).unwrap());
+    match json_util.set_property(&target_keys, serde_json::to_value(new_structs).unwrap()) {
+        Ok(_) => (),
+        Err(e) => {
+            return Err(e.to_string());
+        },
+    };
+    match json_util.save() {
         Ok(_) => {
             info!("{}", messages::INFO_PROXY_MODE_ENABLED);
             Ok(())
@@ -49,7 +55,7 @@ fn set_tun_proxy_impl() -> Result<(), Box<dyn Error>> {
     let path = Path::new(&work_dir).join("sing-box/config.json");
     let mut json_util = ConfigUtil::new(path.to_str().unwrap())?;
 
-    let target_keys = vec!["inbounds"]; // 修改为你的属性路径
+    let target_keys = ["inbounds"]; // 修改为你的属性路径
     let new_structs = vec![
         config_model::Inbound {
             r#type: "mixed".to_string(),
@@ -80,10 +86,7 @@ fn set_tun_proxy_impl() -> Result<(), Box<dyn Error>> {
         },
     ];
 
-    json_util.modify_property(
-        &target_keys,
-        serde_json::to_value(new_structs).map_err(|e| format!("序列化配置失败: {}", e))?,
-    );
+    json_util.set_property(&target_keys, serde_json::to_value(new_structs)?)?;
     json_util
         .save()
         .map_err(|e| format!("保存配置文件失败: {}", e))?;
